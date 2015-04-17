@@ -15,7 +15,7 @@
  */
 
 var chai = require('chai'),
-    assert = chai.assert,
+    expect = chai.expect,
     should = chai.should(),
     chaiAsPromised = require("chai-as-promised"),
     Runner = require('../index'),
@@ -24,6 +24,10 @@ var chai = require('chai'),
 chai.use(chaiAsPromised);
 
 describe('Runner', function() {
+
+  function identity(i) {
+    return i;
+  }
 
   it('should register actions', function() {
     var runner = new Runner(),
@@ -56,12 +60,16 @@ describe('Runner', function() {
     return promise.should.eventually.equal('begonia');
   });
 
+  it('should fail to run an action it does not know about', function() {
+    var runner = new Runner();
+    return runner.run('does-not-exist')
+      .should.be.rejectedWith(TypeError, 'Service does not exist');
+  });
+
   it('should pass arguments to registered actions', function() {
     var runner = new Runner();
 
-    var promise = runner.register('test-args', function(arg) {
-      return arg;
-    }).then(function() {
+    var promise = runner.register('test-args', identity).then(function() {
       return runner.run('test-args', 313);
     });
 
@@ -102,12 +110,9 @@ describe('Runner', function() {
   it('should run the same service twice if requested', function() {
     var runner = new Runner();
 
-    function identity(i) {
-      return i;
-    }
-
     var promise = runner.register('identity', identity).then(function() {
-      return runner.run('identity', 'A').then(function() {
+      return runner.run('identity', 'A').then(function(val) {
+        expect(val).to.be.equal('A');
         return runner.run('identity', 'B');
       });
     });
